@@ -1,0 +1,47 @@
+import type { Order } from '@/types'
+
+export const orders: Order[] = [
+  {
+    id: 'ord-001',
+    reference: 'RMA-20261109-001',
+    date: '9 Nov 2026 · Nara Official',
+    store: 'Nara Official',
+    status: 'paid',
+    statusLabel: 'Lunas · paid',
+    note: 'Pembayaran diterima · Menunggu diproses',
+    lines: [
+      { productId: 'nara-buds-lite', variant: 'Putih', quantity: 1, price: 249000 },
+      { productId: 'nara-tumbler', variant: 'Sage · 600 ml', quantity: 1, price: 89000 },
+    ],
+    subtotal: 338000,
+    discount: 20000,
+    shipping: 0,
+    total: 318000,
+  },
+  {
+    id: 'ord-002',
+    reference: 'RMA-20261102-018',
+    date: '2 Nov 2026 · Everyday Store',
+    store: 'Everyday Store',
+    status: 'done',
+    statusLabel: 'Selesai',
+    lines: [{ productId: 'sneakers-retro', variant: 'Cokelat · 38', quantity: 1, price: 159000 }],
+    subtotal: 159000,
+    discount: 0,
+    shipping: 0,
+    total: 159000,
+  },
+  {
+    id: 'ord-003',
+    reference: 'RMA-20261025-042',
+    date: '25 Okt 2026 · Daily Goods',
+    store: 'Daily Goods',
+    status: 'done',
+    statusLabel: 'Selesai',
+    lines: [{ productId: 'ransel-daily', variant: 'Beige', quantity: 1, price: 129000 }],
+    subtotal: 129000,
+    discount: 0,
+    shipping: 0,
+    total: 129000,
+  },
+]
