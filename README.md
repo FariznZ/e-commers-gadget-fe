@@ -1,6 +1,6 @@
 # E-commers-fe
 
-Frontend aplikasi belanja **rama** (mobile web, 402px) — Vue 3 + TypeScript + Vite + Pinia.
+Frontend aplikasi belanja **OOLAMA** (mobile web, 402px) — Vue 3 + TypeScript + Vite + Pinia.
 Dibangun mengikuti desain Figma "Rama e-commerce mobile app" (file `DlMgXZwZTbBfDSdeEw5Oku`).
 
 ## Menjalankan
@@ -50,3 +50,4 @@ src/
 - State keranjang/auth disimpan di memori Pinia (reset saat halaman dimuat ulang).
 - Token desain: Work Sans, ink `#242630`, accent `#d84719`, aksen kuat `#f25b28`, hijau `#248463`, latar `#f6f7f9`.
 - Status bar perangkat dan chrome OS sengaja tidak disertakan.
+- opencode -s ses_e41c33955ffeRy7AylcirGfcEs  

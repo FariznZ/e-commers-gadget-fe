@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
@@ -79,7 +79,14 @@ function statusTone(order: Order) {
           <div
             class="thumb order-thumb"
             :class="`tone-${getProduct(line.productId)?.tone ?? 1}`"
-          />
+          >
+            <img
+              v-if="getProduct(line.productId)?.image_url"
+              :src="getProduct(line.productId)?.image_url"
+              :alt="getProduct(line.productId)?.name"
+              class="item-img"
+            />
+          </div>
           <div class="grow">
             <p class="item-name">{{ getProduct(line.productId)?.name }}</p>
             <p class="muted text-xs">{{ line.variant }} · {{ line.quantity }} barang</p>
@@ -189,6 +196,16 @@ function statusTone(order: Order) {
   width: 52px;
   height: 60px;
   border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  background: #f1f2f5;
+}
+
+.item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .item-name {

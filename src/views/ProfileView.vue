@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
@@ -8,7 +8,7 @@ const auth = useAuthStore()
 const router = useRouter()
 
 const initials = computed(() =>
-  (auth.user?.name ?? 'Rama')
+  (auth.user?.name ?? 'OOLAMA')
     .split(' ')
     .map((part) => part[0])
     .slice(0, 2)
@@ -40,8 +40,8 @@ function open(to: string) {
   if (to) router.push(to)
 }
 
-function logout() {
-  auth.logout()
+async function logout() {
+  await auth.logout()
   router.push('/masuk')
 }
 </script>
@@ -49,7 +49,7 @@ function logout() {
 <template>
   <div class="screen">
     <header class="top">
-      <span class="brand">rama</span>
+      <span class="brand">OOLAMA</span>
       <button class="icon-btn" type="button" aria-label="Notifikasi">
         <Icon name="bell" :size="22" />
       </button>
@@ -116,7 +116,7 @@ function logout() {
         Keluar dari akun
       </button>
 
-      <p class="version">rama v1.0.0 · Demo belanja</p>
+      <p class="version">OOLAMA v1.0.0 · Supabase Auth Connected</p>
     </div>
 
     <div v-else class="guest">

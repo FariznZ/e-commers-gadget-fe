@@ -1,23 +1,76 @@
-﻿<script setup lang="ts">
-import { computed, ref } from 'vue'
+<script setup lang="ts">
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import Icon from '@/components/Icon.vue'
 import { getProduct } from '@/data/products'
+import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/stores/cart'
 import { formatIDR } from '@/utils/format'
+import type { Product } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const cart = useCartStore()
 
-const product = computed(() => getProduct(String(route.params.id)))
-const variant = ref(product.value?.variants[0] ?? '')
+const product = ref<Product | null>(null)
+const isLoading = ref(true)
+const variant = ref('')
 const added = ref(false)
+
+async function loadProduct() {
+  const id = String(route.params.id)
+  isLoading.value = true
+
+  // Cek dulu apakah ada di mock data
+  const localProduct = getProduct(id)
+  if (localProduct) {
+    product.value = localProduct
+    variant.value = localProduct.variants?.[0] ?? 'Standar'
+    isLoading.value = false
+    return
+  }
+
+  // Jika tidak ada di mock, ambil langsung dari Supabase
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (error) throw error
+
+    if (data) {
+      product.value = data
+      variant.value = data.variants?.[0] ?? 'Standar'
+    } else {
+      product.value = null
+    }
+  } catch (error) {
+    console.error('Error fetching product from Supabase:', error)
+    product.value = null
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadProduct()
+})
 
 const discountPercent = computed(() => {
   if (!product.value) return ''
-  return `Hemat ${product.value.discountLabel.replace(/[^0-9]/g, '')}%`
+  if (product.value.discountLabel) {
+    return `Hemat ${product.value.discountLabel.replace(/[^0-9]/g, '')}%`
+  }
+  if (product.value.originalPrice && product.value.originalPrice > product.value.price) {
+    const pct = Math.round(
+      ((product.value.originalPrice - product.value.price) / product.value.originalPrice) * 100,
+    )
+    return `Hemat ${pct}%`
+  }
+  return ''
 })
 
 function addToCart() {
@@ -44,47 +97,72 @@ function buyNow() {
       </template>
     </AppHeader>
 
-    <template v-if="product">
+    <div v-if="isLoading" class="not-found">
+      <Icon name="package" :size="26" />
+      <p>Memuat detail produk...</p>
+    </div>
+
+    <template v-else-if="product">
       <div class="scroll detail">
-        <div class="thumb gallery" :class="`tone-${product.tone}`">
-          <span class="count-pill">1 / 4</span>
+        <div class="thumb gallery" :class="product.tone ? `tone-${product.tone}` : ''">
+          <img
+            v-if="product.image_url"
+            :src="product.image_url"
+            :alt="product.name"
+            class="detail-image"
+          />
+          <span class="count-pill">1 / 1</span>
         </div>
 
         <section class="block">
           <div class="price-row">
             <span class="price">{{ formatIDR(product.price) }}</span>
-            <span class="original">{{ formatIDR(product.originalPrice) }}</span>
-            <span class="pill pill-accent">{{ discountPercent }}</span>
+            <span v-if="product.originalPrice" class="original">
+              {{ formatIDR(product.originalPrice) }}
+            </span>
+            <span v-if="discountPercent" class="pill pill-accent">{{ discountPercent }}</span>
           </div>
 
           <h1 class="name">{{ product.subtitle ?? product.name }}</h1>
 
           <div class="rating">
             <Icon name="star" :size="13" />
-            <strong>{{ product.rating.toLocaleString('id-ID') }}</strong>
-            <span class="muted">(328 ulasan) · {{ product.sold }}</span>
+            <strong>{{ product.rating ? product.rating.toLocaleString('id-ID') : '5.0' }}</strong>
+            <span class="muted">
+              {{ product.sold ? `· ${product.sold}` : `· Stok tersedia: ${product.stock}` }}
+            </span>
           </div>
         </section>
 
         <div class="divider" />
 
         <section class="block">
-          <p class="field-label">Warna: {{ variant }}</p>
-          <div class="chip-row">
-            <button
-              v-for="option in product.variants"
-              :key="option"
-              class="chip"
-              :class="{ active: variant === option }"
-              type="button"
-              @click="variant = option"
-            >
-              {{ option }}
-            </button>
+          <div v-if="product.variants && product.variants.length > 0">
+            <p class="field-label">Pilihan: {{ variant }}</p>
+            <div class="chip-row">
+              <button
+                v-for="option in product.variants"
+                :key="option"
+                class="chip"
+                :class="{ active: variant === option }"
+                type="button"
+                @click="variant = option"
+              >
+                {{ option }}
+              </button>
+            </div>
+            <p class="muted text-xs stock">Stok tersedia: {{ product.stock }}</p>
           </div>
-          <p v-if="product.variants.length" class="muted text-xs stock">Stok tersedia</p>
-          <div class="chip-row features">
-            <span v-for="feature in product.features" :key="feature" class="feature">{{ feature }}</span>
+          <div v-else>
+            <p class="muted text-xs stock">
+              Kategori: <strong>{{ product.category }}</strong> · Stok: <strong>{{ product.stock }}</strong>
+            </p>
+          </div>
+
+          <div v-if="product.features && product.features.length" class="chip-row features">
+            <span v-for="feature in product.features" :key="feature" class="feature">
+              {{ feature }}
+            </span>
           </div>
         </section>
 
@@ -94,29 +172,28 @@ function buyNow() {
               <Icon name="truck" :size="18" />
               <strong>Gratis ongkir</strong>
             </div>
-            <p class="muted text-xs">Ke Jakarta Selatan · Tiba 11–13 Nov</p>
+            <p class="muted text-xs">Ke Jakarta Selatan · Tiba 2–3 hari kerja</p>
             <p class="muted text-2xs">Min. belanja Rp100.000</p>
           </div>
         </section>
 
         <section class="block">
           <div class="card seller">
-            <div class="monogram">n.</div>
+            <div class="monogram">{{ (product.store ?? 'OOLAMA')[0] }}</div>
             <div class="grow">
               <p class="row gap-4 seller-name">
-                {{ product.store }}
+                {{ product.store ?? 'OOLAMA Official' }}
                 <Icon name="badge-check" :size="13" />
               </p>
-              <p class="muted text-xs">{{ product.storeLocation }}</p>
+              <p class="muted text-xs">{{ product.storeLocation ?? 'Jakarta Selatan · Online' }}</p>
             </div>
             <button class="link" type="button">Kunjungi</button>
           </div>
         </section>
 
         <section class="block">
-          <h2 class="h2">Teman dengar, sepanjang hari.</h2>
+          <h2 class="h2">Deskripsi Produk</h2>
           <p class="desc">{{ product.description }}</p>
-          <button class="link more" type="button">Lihat detail lengkap</button>
         </section>
       </div>
 
@@ -147,6 +224,16 @@ function buyNow() {
 .gallery {
   aspect-ratio: 1 / 1;
   width: 100%;
+  position: relative;
+  background: #f1f2f5;
+  overflow: hidden;
+}
+
+.detail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .count-pill {
@@ -173,7 +260,7 @@ function buyNow() {
 }
 
 .price {
-  font-size: 34px;
+  font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--accent);
@@ -187,7 +274,7 @@ function buyNow() {
 
 .name {
   margin-top: 10px;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
   line-height: 1.3;
   white-space: pre-line;
@@ -267,7 +354,7 @@ function buyNow() {
   border-radius: 10px;
   background: var(--tint-accent);
   color: var(--accent-strong);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -295,11 +382,6 @@ function buyNow() {
   font-size: 13px;
   line-height: 1.55;
   color: var(--muted);
-}
-
-.more {
-  margin-top: 10px;
-  font-size: 12px;
 }
 
 .chat {

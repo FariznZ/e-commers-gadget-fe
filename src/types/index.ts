@@ -1,21 +1,35 @@
-export type Category = 'Elektronik' | 'Fashion' | 'Kecantikan' | 'Rumah' | 'Lainnya'
+export type Category =
+  | 'Semua'
+  | 'Elektronik'
+  | 'Smartphone'
+  | 'Laptop'
+  | 'Audio'
+  | 'Wearable'
+  | 'Aksesoris'
+  | string
 
 export interface Product {
+  // Properti wajib dari database Supabase
   id: string
   name: string
-  subtitle?: string
-  category: Category
-  price: number
-  originalPrice: number
-  discountLabel: string
-  rating: number
-  sold: string
-  store: string
-  storeLocation: string
-  tone: 1 | 2 | 3 | 4
-  variants: string[]
-  features: string[]
   description: string
+  price: number
+  image_url: string
+  category: Category
+  stock: number
+  created_at?: string
+
+  // Properti desain opsional (mendukung mock & variasi UI)
+  subtitle?: string
+  originalPrice?: number
+  discountLabel?: string
+  rating?: number
+  sold?: string
+  store?: string
+  storeLocation?: string
+  tone?: 1 | 2 | 3 | 4
+  variants?: string[]
+  features?: string[]
 }
 
 export interface CartLine {
@@ -48,11 +62,12 @@ export interface Order {
 }
 
 export interface User {
+  id?: string
   name: string
   email: string
-  phone: string
-  address: string
-  city: string
-  postalCode: string
-  membership: string
+  phone?: string
+  address?: string
+  city?: string
+  postalCode?: string
+  membership?: string
 }

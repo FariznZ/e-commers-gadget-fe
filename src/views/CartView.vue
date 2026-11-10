@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
@@ -11,7 +11,7 @@ import { formatIDR, signedIDR } from '@/utils/format'
 const cart = useCartStore()
 const router = useRouter()
 
-const store = computed(() => cart.detailed[0]?.product.store ?? 'Nara Official')
+const store = computed(() => cart.detailed[0]?.product.store ?? 'OOLAMA Official')
 const totalItems = computed(() => cart.lineCount)
 
 function goCheckout() {
@@ -42,14 +42,25 @@ function goCheckout() {
           </span>
           <span>Pilih semua ({{ totalItems }})</span>
         </button>
-        <button class="remove" type="button" :disabled="cart.selectedCount === 0" @click="cart.removeSelected()">
+        <button
+          class="remove"
+          type="button"
+          :disabled="cart.selectedCount === 0"
+          @click="cart.removeSelected()"
+        >
           Hapus
         </button>
       </div>
 
       <section class="card store-card">
         <div class="store-head">
-          <button class="check" :class="{ active: cart.allSelected }" type="button" aria-label="Pilih semua item toko" @click="cart.toggleAll()">
+          <button
+            class="check"
+            :class="{ active: cart.allSelected }"
+            type="button"
+            aria-label="Pilih semua item toko"
+            @click="cart.toggleAll()"
+          >
             <Icon v-if="cart.allSelected" name="check" :size="12" :stroke-width="2.4" />
           </button>
           <Icon name="store" :size="17" />
@@ -59,7 +70,11 @@ function goCheckout() {
         </div>
         <div class="divider" />
 
-        <div v-for="entry in cart.detailed" :key="`${entry.product.id}-${entry.line.variant}`" class="cart-item">
+        <div
+          v-for="entry in cart.detailed"
+          :key="`${entry.product.id}-${entry.line.variant}`"
+          class="cart-item"
+        >
           <button
             class="check item-check"
             :class="{ active: entry.line.selected }"
@@ -70,7 +85,17 @@ function goCheckout() {
             <Icon v-if="entry.line.selected" name="check" :size="12" :stroke-width="2.4" />
           </button>
 
-          <div class="thumb item-thumb" :class="`tone-${entry.product.tone}`" />
+          <div
+            class="thumb item-thumb"
+            :class="entry.product.tone ? `tone-${entry.product.tone}` : ''"
+          >
+            <img
+              v-if="entry.product.image_url"
+              :src="entry.product.image_url"
+              :alt="entry.product.name"
+              class="item-img"
+            />
+          </div>
 
           <div class="item-info">
             <p class="item-name">{{ entry.product.name }}</p>
@@ -78,12 +103,16 @@ function goCheckout() {
               <span>{{ entry.line.variant }}</span>
               <Icon name="chevron-down" :size="11" />
             </button>
-            <p class="original">{{ formatIDR(entry.product.originalPrice) }}</p>
+            <p v-if="entry.product.originalPrice" class="original">
+              {{ formatIDR(entry.product.originalPrice) }}
+            </p>
             <div class="row between price-row">
               <span class="item-price">{{ formatIDR(entry.product.price) }}</span>
               <QtyStepper
                 :model-value="entry.line.quantity"
-                @update:model-value="cart.setQuantity(entry.product.id, entry.line.variant, $event)"
+                @update:model-value="
+                  cart.setQuantity(entry.product.id, entry.line.variant, $event)
+                "
               />
             </div>
           </div>
@@ -107,7 +136,10 @@ function goCheckout() {
       <section class="card card-pad summary">
         <h2 class="h2">Ringkasan belanja</h2>
         <div class="summary-rows">
-          <SummaryRow :label="`Total harga (${cart.selectedCount} barang)`" :value="formatIDR(cart.subtotal)" />
+          <SummaryRow
+            :label="`Total harga (${cart.selectedCount} barang)`"
+            :value="formatIDR(cart.subtotal)"
+          />
           <SummaryRow label="Diskon voucher" :value="signedIDR(-cart.discount)" tone="green" />
           <SummaryRow label="Ongkos kirim" value="Gratis" tone="green" />
           <div class="divider" />
@@ -121,7 +153,7 @@ function goCheckout() {
 
       <p class="protection">
         <Icon name="shield" :size="15" />
-        Belanja aman · Pembayaran terlindungi rama
+        Belanja aman · Pembayaran terlindungi OOLAMA
       </p>
     </div>
 
@@ -136,7 +168,12 @@ function goCheckout() {
         <span>Total pembayaran</span>
         <strong>{{ formatIDR(cart.total) }}</strong>
       </div>
-      <button class="btn btn-primary" type="button" :disabled="cart.selectedCount === 0" @click="goCheckout">
+      <button
+        class="btn btn-primary"
+        type="button"
+        :disabled="cart.selectedCount === 0"
+        @click="goCheckout"
+      >
         Checkout ({{ cart.selectedCount }})
       </button>
     </div>
@@ -254,6 +291,16 @@ function goCheckout() {
   width: 82px;
   height: 96px;
   border-radius: 8px;
+  overflow: hidden;
+  background: #f1f2f5;
+  position: relative;
+}
+
+.item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .item-info {

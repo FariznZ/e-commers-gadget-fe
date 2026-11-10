@@ -1,14 +1,41 @@
-﻿<script setup lang="ts">
-import { ref } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import ProductCard from '@/components/ProductCard.vue'
-import { products } from '@/data/products'
+import { products as localGadgets } from '@/data/products'
+import { supabase } from '@/lib/supabase'
+import type { Product } from '@/types'
 
 const router = useRouter()
 const keyword = ref('')
 
-const categories = ['Elektronik', 'Fashion', 'Kecantikan', 'Rumah', 'Lainnya']
+const categories = ['Smartphone', 'Laptop', 'Audio', 'Wearable', 'Aksesoris']
+const displayProducts = ref<Product[]>([])
+
+onMounted(async () => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('category', 'Elektronik')
+      .order('created_at', { ascending: false })
+
+    const dbGadgets = !error && data ? data : []
+    const combined = [...dbGadgets]
+
+    for (const local of localGadgets) {
+      if (!combined.some((p) => p.id === local.id)) {
+        combined.push(local)
+      }
+    }
+
+    displayProducts.value = combined
+  } catch (err) {
+    console.warn('HomeView: fallback to local gadgets', err)
+    displayProducts.value = [...localGadgets]
+  }
+})
 
 function search() {
   router.push({ path: '/jelajah', query: keyword.value ? { q: keyword.value } : {} })
@@ -19,7 +46,7 @@ function search() {
   <div class="screen">
     <div class="home-top">
       <div class="row between">
-        <span class="brand">rama</span>
+        <span class="brand">OOLAMA</span>
         <button class="icon-btn" type="button" aria-label="Notifikasi">
           <Icon name="bell" :size="22" />
         </button>
@@ -27,7 +54,7 @@ function search() {
 
       <form class="search-bar" @submit.prevent="search">
         <Icon name="search" :size="19" />
-        <input v-model="keyword" type="search" placeholder="Cari barang favoritmu di sini" />
+        <input v-model="keyword" type="search" placeholder="Cari gadget, smartphone, laptop..." />
       </form>
 
       <button class="delivery" type="button">
@@ -41,11 +68,11 @@ function search() {
     <div class="stack body">
       <section class="section">
         <div class="card campaign">
-          <p class="eyebrow">FAVORIT HARIAN</p>
-          <h2 class="h2">Suara jernih,<br />harga lebih asyik.</h2>
-          <p class="campaign-price">Nara Buds Lite mulai Rp249.000</p>
-          <RouterLink to="/produk/nara-buds-lite" class="btn btn-soft campaign-cta">
-            Belanja sekarang
+          <p class="eyebrow">GADGET &amp; ELEKTRONIK TERBARU</p>
+          <h2 class="h2">Performa Kencang,<br />Suara Jernih.</h2>
+          <p class="campaign-price">Diskon hingga 25% gadget pilihan</p>
+          <RouterLink to="/jelajah" class="btn btn-soft campaign-cta">
+            Belanja gadget
           </RouterLink>
         </div>
       </section>
@@ -56,18 +83,24 @@ function search() {
           <span>Gratis ongkir</span>
         </div>
         <div class="card benefit">
-          <Icon name="ticket" :size="17" />
-          <span>Voucher buatmu</span>
+          <Icon name="shield" :size="17" />
+          <span>Garansi 1 tahun</span>
         </div>
       </section>
 
       <section class="section">
         <div class="row between section-head">
-          <h2 class="h2">Mau cari apa?</h2>
+          <h2 class="h2">Kategori Gadget</h2>
           <RouterLink to="/jelajah" class="link">Lihat semua</RouterLink>
         </div>
         <div class="chip-row">
-          <button v-for="c in categories" :key="c" class="chip" type="button" @click="router.push(`/jelajah?kategori=${encodeURIComponent(c)}`)">
+          <button
+            v-for="c in categories"
+            :key="c"
+            class="chip"
+            type="button"
+            @click="router.push(`/jelajah?kategori=${encodeURIComponent(c)}`)"
+          >
             {{ c }}
           </button>
         </div>
@@ -75,11 +108,15 @@ function search() {
 
       <section class="section">
         <div class="row between section-head">
-          <h2 class="h2">Pilihan buat kamu</h2>
+          <h2 class="h2">Pilihan Gadget Buat Kamu</h2>
           <RouterLink to="/jelajah" class="link">Lihat semua</RouterLink>
         </div>
         <div class="grid">
-          <ProductCard v-for="product in products" :key="product.id" :product="product" />
+          <ProductCard
+            v-for="product in displayProducts"
+            :key="product.id"
+            :product="product"
+          />
         </div>
       </section>
     </div>

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -66,6 +67,34 @@ const router = createRouter({
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior: () => ({ top: 0 }),
+})
+
+// Navigation Guard: Menjaga semua rute agar wajib login terlebih dahulu
+router.beforeEach(async (to, _from, next) => {
+  const auth = useAuthStore()
+
+  // Pastikan sesi Supabase telah dicek saat aplikasi pertama kali dibuka
+  if (!auth.isInitialized) {
+    await auth.init()
+  }
+
+  const publicRoutes = ['/masuk', '/daftar']
+  const isPublic = publicRoutes.includes(to.path)
+
+  // 1. Jika pengguna belum login dan mencoba mengakses rute tertutup, arahkan ke /masuk
+  if (!auth.isAuthenticated && !isPublic) {
+    return next({
+      path: '/masuk',
+      query: to.path !== '/' ? { redirect: to.fullPath } : undefined,
+    })
+  }
+
+  // 2. Jika pengguna sudah login dan membuka halaman /masuk atau /daftar, alihkan ke beranda
+  if (auth.isAuthenticated && isPublic) {
+    return next('/')
+  }
+
+  next()
 })
 
 export default router

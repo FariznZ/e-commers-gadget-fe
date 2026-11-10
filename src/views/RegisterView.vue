@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import FormField from '@/components/FormField.vue'
@@ -11,15 +11,32 @@ const auth = useAuthStore()
 const form = reactive({ name: '', email: '', phone: '', password: '' })
 const agreed = ref(false)
 const submitted = ref(false)
+const errorMessage = ref('')
+const successMessage = ref('')
 
 const isValid = () =>
   Boolean(form.name && form.email && form.phone && form.password.length >= 6 && agreed.value)
 
-function submit() {
+async function submit() {
   submitted.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
   if (!isValid()) return
-  auth.register(form.name, form.email)
-  router.push('/')
+
+  const result = await auth.register(form.name, form.email, form.phone, form.password)
+  if (result.success) {
+    if (result.requireVerification) {
+      successMessage.value =
+        'Akun berhasil dibuat! Silakan cek email Anda untuk konfirmasi, lalu masuk.'
+      window.setTimeout(() => {
+        router.push('/masuk')
+      }, 2500)
+    } else {
+      router.push('/')
+    }
+  } else {
+    errorMessage.value = result.error || 'Pendaftaran gagal. Periksa kembali data Anda.'
+  }
 }
 </script>
 
@@ -29,38 +46,73 @@ function submit() {
       <button class="icon-btn" type="button" aria-label="Kembali" @click="router.back()">
         <Icon name="arrow-left" :size="22" />
       </button>
-      <span class="brand">rama</span>
+      <span class="brand">OOLAMA</span>
     </div>
 
     <div class="body">
       <header class="intro">
         <h1 class="h1">Buat akun<br />baru</h1>
-        <p class="muted text-sm">Daftar gratis dan mulai kumpulkan voucher belanja.</p>
+        <p class="muted text-sm">Daftar akun belanja Supabase untuk mendapatkan voucher dan promo.</p>
       </header>
 
       <form class="card card-pad form" @submit.prevent="submit">
-        <FormField v-model="form.name" label="Nama lengkap" placeholder="Nama lengkap" autocomplete="name" />
-        <FormField v-model="form.email" label="Email" type="email" placeholder="nama@email.com" autocomplete="email" />
-        <FormField v-model="form.phone" label="Nomor HP" type="tel" placeholder="08xx xxxx xxxx" autocomplete="tel" />
+        <div v-if="errorMessage" class="alert-error">
+          <Icon name="help" :size="16" />
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <div v-if="successMessage" class="alert-success">
+          <Icon name="check" :size="16" />
+          <span>{{ successMessage }}</span>
+        </div>
+
+        <FormField
+          v-model="form.name"
+          label="Nama lengkap"
+          placeholder="Nama lengkap"
+          autocomplete="name"
+        />
+        <FormField
+          v-model="form.email"
+          label="Email"
+          type="email"
+          placeholder="nama@email.com"
+          autocomplete="email"
+          hint="Gunakan format email valid (contoh: user@gmail.com)"
+        />
+        <FormField
+          v-model="form.phone"
+          label="Nomor HP"
+          type="tel"
+          placeholder="08xx xxxx xxxx"
+          autocomplete="tel"
+        />
         <FormField
           v-model="form.password"
           label="Kata sandi"
           type="password"
           placeholder="Minimal 6 karakter"
           autocomplete="new-password"
-          hint="Gunakan kombinasi huruf dan angka agar aman."
+          hint="Gunakan minimal 6 karakter agar aman."
         />
 
         <label class="agree">
           <input v-model="agreed" type="checkbox" />
           <span>
-            Saya menyetujui <strong>Ketentuan Layanan</strong> dan <strong>Kebijakan Privasi</strong> rama.
+            Saya menyetujui <strong>Ketentuan Layanan</strong> dan <strong>Kebijakan Privasi</strong> OOLAMA.
           </span>
         </label>
 
-        <button class="btn btn-primary btn-block" type="submit">Daftar</button>
+        <button
+          class="btn btn-primary btn-block"
+          type="submit"
+          :disabled="auth.isLoading"
+        >
+          {{ auth.isLoading ? 'Mendaftarkan akun...' : 'Daftar' }}
+        </button>
+
         <p v-if="submitted && !isValid()" class="error">
-          Lengkapi data, gunakan kata sandi minimal 6 karakter, dan setujui ketentuan.
+          Lengkapi seluruh data, gunakan kata sandi minimal 6 karakter, dan setujui ketentuan.
         </p>
       </form>
 
@@ -69,7 +121,7 @@ function submit() {
         <RouterLink to="/masuk" class="link-strong">Masuk</RouterLink>
       </p>
 
-      <p class="terms">Data kamu hanya dipakai untuk simulasi belanja di aplikasi ini.</p>
+      <p class="terms">Akun tersimpan aman dan terenkripsi di Supabase Authentication.</p>
     </div>
   </div>
 </template>
@@ -109,6 +161,42 @@ function submit() {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.alert-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.alert-error :deep(svg) {
+  flex: none;
+  margin-top: 1px;
+}
+
+.alert-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.alert-success :deep(svg) {
+  flex: none;
+  margin-top: 1px;
 }
 
 .agree {

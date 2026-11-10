@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FormField from '@/components/FormField.vue'
@@ -9,41 +9,56 @@ const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 
-const form = reactive({ email: 'andika.pratama@email.com', password: 'rama12345' })
+const form = reactive({ email: '', password: '' })
 const remember = ref(true)
 const submitted = ref(false)
+const errorMessage = ref('')
 
-function submit() {
+async function submit() {
   submitted.value = true
+  errorMessage.value = ''
   if (!form.email || !form.password) return
-  auth.login(form.email)
-  router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
+
+  const result = await auth.login(form.email, form.password)
+  if (result.success) {
+    const redirectPath =
+      typeof route.query.redirect === 'string' && route.query.redirect !== '/masuk'
+        ? route.query.redirect
+        : '/'
+    router.push(redirectPath)
+  } else {
+    errorMessage.value = result.error || 'Gagal masuk. Silakan periksa kembali email & kata sandi.'
+  }
 }
 </script>
 
 <template>
   <div class="screen auth">
     <div class="auth-top">
-      <button class="icon-btn" type="button" aria-label="Kembali" @click="router.back()">
-        <Icon name="arrow-left" :size="22" />
-      </button>
-      <span class="brand">rama</span>
+      <span class="brand">OOLAMA</span>
     </div>
 
     <div class="body">
       <header class="intro">
         <h1 class="h1">Masuk ke<br />akunmu</h1>
-        <p class="muted text-sm">Lanjut belanja barang favoritmu dengan satu akun.</p>
+        <p class="muted text-sm">
+          Masuk dengan akun Supabase untuk mulai menjelajah produk dan berbelanja.
+        </p>
       </header>
 
       <form class="card card-pad form" @submit.prevent="submit">
+        <div v-if="errorMessage" class="alert-error">
+          <Icon name="help" :size="16" />
+          <span>{{ errorMessage }}</span>
+        </div>
+
         <FormField
           v-model="form.email"
           label="Email"
           type="email"
           placeholder="nama@email.com"
           autocomplete="email"
-          hint="Coba akun demo: andika.pratama@email.com"
+          hint="Gunakan email yang terdaftar di database Supabase"
         />
         <FormField
           v-model="form.password"
@@ -56,39 +71,30 @@ function submit() {
         <div class="row between options">
           <label class="remember">
             <input v-model="remember" type="checkbox" />
-            <span>Ingat saya</span>
+            <span>Ingat saya di sesi ini</span>
           </label>
-          <button class="link" type="button">Lupa kata sandi?</button>
         </div>
 
-        <button class="btn btn-primary btn-block" type="submit">Masuk</button>
+        <button
+          class="btn btn-primary btn-block"
+          type="submit"
+          :disabled="auth.isLoading"
+        >
+          {{ auth.isLoading ? 'Sedang masuk...' : 'Masuk' }}
+        </button>
+
         <p v-if="submitted && (!form.email || !form.password)" class="error">
           Email dan kata sandi wajib diisi.
         </p>
       </form>
 
-      <div class="or">
-        <span>atau</span>
-      </div>
-
-      <div class="socials">
-        <button class="btn btn-outline" type="button" @click="submit">
-          <Icon name="globe" :size="18" />
-          Google
-        </button>
-        <button class="btn btn-outline" type="button" @click="submit">
-          <Icon name="store" :size="18" />
-          Apple
-        </button>
-      </div>
-
       <p class="switch">
         Belum punya akun?
-        <RouterLink to="/daftar" class="link-strong">Daftar</RouterLink>
+        <RouterLink to="/daftar" class="link-strong">Daftar Akun Baru</RouterLink>
       </p>
 
       <p class="terms">
-        Dengan masuk, kamu menyetujui Ketentuan Layanan dan Kebijakan Privasi rama.
+        Terhubung langsung ke otentikasi aman Supabase.
       </p>
     </div>
   </div>
@@ -102,16 +108,17 @@ function submit() {
 .auth-top {
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: center;
   height: 58px;
   padding: 0 20px;
+  border-bottom: 1px solid var(--line);
 }
 
 .body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 8px 20px 28px;
+  padding: 16px 20px 28px;
 }
 
 .intro {
@@ -129,6 +136,24 @@ function submit() {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.alert-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.alert-error :deep(svg) {
+  flex: none;
+  margin-top: 1px;
 }
 
 .options {
@@ -150,51 +175,13 @@ function submit() {
   margin: 0;
 }
 
-.link {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  cursor: pointer;
-}
-
 .error {
   font-size: 11px;
   color: var(--accent);
 }
 
-.or {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.or::before,
-.or::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--line);
-}
-
-.socials {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.socials .btn {
-  height: 46px;
-  font-size: 12px;
-  color: var(--ink);
-}
-
 .switch {
-  margin-top: 4px;
+  margin-top: 12px;
   font-size: 12px;
   text-align: center;
   color: var(--muted);
@@ -210,5 +197,6 @@ function submit() {
   line-height: 1.5;
   text-align: center;
   color: var(--muted);
+  margin-top: auto;
 }
 </style>

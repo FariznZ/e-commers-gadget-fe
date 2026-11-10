@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
@@ -22,7 +22,7 @@ const address = reactive({
   label: 'Rumah',
 })
 
-const store = computed(() => cart.detailed[0]?.product.store ?? 'Nara Official')
+const store = computed(() => cart.detailed[0]?.product.store ?? 'OOLAMA Official')
 
 function pay() {
   router.push('/pembayaran-berhasil')
@@ -51,7 +51,12 @@ function pay() {
           <FormField v-model="address.name" label="Nama penerima" placeholder="Nama penerima" />
           <FormField v-model="address.phone" label="Nomor HP" placeholder="Nomor HP" />
         </div>
-        <FormField v-model="address.address" label="Alamat lengkap" placeholder="Alamat lengkap" textarea />
+        <FormField
+          v-model="address.address"
+          label="Alamat lengkap"
+          placeholder="Alamat lengkap"
+          textarea
+        />
         <FormField v-model="address.city" label="Kota / Kecamatan" placeholder="Kota / Kecamatan" />
         <div class="grid-2">
           <FormField v-model="address.postalCode" label="Kode pos" placeholder="Kode pos" />
@@ -67,8 +72,22 @@ function pay() {
         </div>
         <div class="divider" />
 
-        <div v-for="entry in cart.detailed" :key="`${entry.product.id}-${entry.line.variant}`" class="order-item">
-          <div class="thumb order-thumb" :class="`tone-${entry.product.tone}`" />
+        <div
+          v-for="entry in cart.detailed"
+          :key="`${entry.product.id}-${entry.line.variant}`"
+          class="order-item"
+        >
+          <div
+            class="thumb order-thumb"
+            :class="entry.product.tone ? `tone-${entry.product.tone}` : ''"
+          >
+            <img
+              v-if="entry.product.image_url"
+              :src="entry.product.image_url"
+              :alt="entry.product.name"
+              class="item-img"
+            />
+          </div>
           <div class="grow">
             <p class="item-name">{{ entry.product.name }}</p>
             <p class="muted text-xs">{{ entry.line.variant }} · {{ entry.line.quantity }} barang</p>
@@ -81,7 +100,7 @@ function pay() {
           <Icon name="truck" :size="20" />
           <div class="grow">
             <p class="delivery-title">Reguler · Gratis ongkir</p>
-            <p class="muted text-xs">Estimasi tiba 11–13 Nov</p>
+            <p class="muted text-xs">Estimasi tiba 2–3 hari kerja</p>
           </div>
           <Icon name="chevron-right" :size="16" class="muted-icon" />
         </div>
@@ -90,7 +109,10 @@ function pay() {
       <section class="card card-pad">
         <h2 class="h2">Ringkasan pesanan</h2>
         <div class="summary-rows">
-          <SummaryRow :label="`Total harga (${cart.selectedCount} barang)`" :value="formatIDR(cart.subtotal)" />
+          <SummaryRow
+            :label="`Total harga (${cart.selectedCount} barang)`"
+            :value="formatIDR(cart.subtotal)"
+          />
           <SummaryRow label="Voucher HEMAT20" value="−Rp20.000" tone="green" />
           <SummaryRow label="Ongkos kirim" value="Gratis" tone="green" />
           <div class="divider" />
@@ -198,6 +220,16 @@ function pay() {
   width: 58px;
   height: 66px;
   border-radius: 8px;
+  overflow: hidden;
+  background: #f1f2f5;
+  position: relative;
+}
+
+.item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .item-name {

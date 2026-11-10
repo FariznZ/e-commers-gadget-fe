@@ -11,12 +11,23 @@ const lineKey = (productId: string, variant: string) => `${productId}|${variant}
 export const useCartStore = defineStore('cart', () => {
   const lines = ref<CartLine[]>([
     { productId: 'nara-buds-lite', variant: 'Putih', quantity: 1, selected: true },
-    { productId: 'nara-tumbler', variant: 'Sage · 600 ml', quantity: 1, selected: true },
+    { productId: 'nara-charger-gan65w', variant: 'Hitam', quantity: 1, selected: true },
   ])
+
+  // Cache produk dinamis (termasuk produk dari Supabase)
+  const productCache = ref<Record<string, Product>>({})
+
+  function registerProduct(product: Product) {
+    productCache.value[product.id] = product
+  }
+
+  function resolveProduct(productId: string): Product | undefined {
+    return productCache.value[productId] ?? getProduct(productId)
+  }
 
   const detailed = computed(() =>
     lines.value
-      .map((line) => ({ line, product: getProduct(line.productId) }))
+      .map((line) => ({ line, product: resolveProduct(line.productId) }))
       .filter((entry): entry is { line: CartLine; product: Product } => Boolean(entry.product)),
   )
 
@@ -32,19 +43,23 @@ export const useCartStore = defineStore('cart', () => {
     selected.value.reduce((sum, entry) => sum + entry.product.price * entry.line.quantity, 0),
   )
   const originalSubtotal = computed(() =>
-    selected.value.reduce((sum, entry) => sum + entry.product.originalPrice * entry.line.quantity, 0),
+    selected.value.reduce(
+      (sum, entry) => sum + (entry.product.originalPrice ?? entry.product.price) * entry.line.quantity,
+      0,
+    ),
   )
   const discount = computed(() => (subtotal.value >= VOUCHER_MIN ? VOUCHER_AMOUNT : 0))
   const shipping = computed(() => 0)
   const total = computed(() => subtotal.value - discount.value + shipping.value)
-  const savings = computed(() => originalSubtotal.value - subtotal.value + discount.value)
+  const savings = computed(() => Math.max(0, originalSubtotal.value - subtotal.value + discount.value))
 
   const allSelected = computed(
     () => lines.value.length > 0 && lines.value.every((line) => line.selected),
   )
 
   function add(product: Product, variant?: string) {
-    const chosen = variant ?? product.variants[0]
+    registerProduct(product)
+    const chosen = variant || (product.variants && product.variants.length > 0 ? product.variants[0] : 'Standar')
     const key = lineKey(product.id, chosen)
     const existing = lines.value.find((line) => lineKey(line.productId, line.variant) === key)
     if (existing) {
@@ -104,6 +119,7 @@ export const useCartStore = defineStore('cart', () => {
     savings,
     allSelected,
     voucherMin: VOUCHER_MIN,
+    registerProduct,
     add,
     remove,
     setQuantity,

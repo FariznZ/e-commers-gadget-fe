@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, ref } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 import Icon from '@/components/Icon.vue'
@@ -10,10 +10,10 @@ import { formatIDR } from '@/utils/format'
 const cart = useCartStore()
 const auth = useAuthStore()
 
-const orderNumber = 'RMA-20261109-001'
+const orderNumber = 'OOL-20261109-001'
 const copied = ref(false)
 
-const firstName = computed(() => (auth.user?.name ?? 'Alya').split(' ')[0])
+const firstName = computed(() => (auth.user?.name ?? 'Pengguna').split(' ')[0])
 
 async function copyReference() {
   try {
@@ -51,15 +51,34 @@ async function copyReference() {
       <section class="card receipt">
         <div class="row between reference">
           <span class="ref-number">{{ orderNumber }}</span>
-          <button class="copy" type="button" aria-label="Salin nomor pesanan" @click="copyReference">
+          <button
+            class="copy"
+            type="button"
+            aria-label="Salin nomor pesanan"
+            @click="copyReference"
+          >
             <Icon :name="copied ? 'check' : 'copy'" :size="16" />
           </button>
         </div>
-        <p class="muted text-xs">9 Nov 2026 · 09.41 WIB</p>
+        <p class="muted text-xs">9 Nov 2026 · WIB</p>
         <div class="divider" />
 
-        <div v-for="entry in cart.detailed" :key="`${entry.product.id}-${entry.line.variant}`" class="receipt-item">
-          <div class="thumb receipt-thumb" :class="`tone-${entry.product.tone}`" />
+        <div
+          v-for="entry in cart.detailed"
+          :key="`${entry.product.id}-${entry.line.variant}`"
+          class="receipt-item"
+        >
+          <div
+            class="thumb receipt-thumb"
+            :class="entry.product.tone ? `tone-${entry.product.tone}` : ''"
+          >
+            <img
+              v-if="entry.product.image_url"
+              :src="entry.product.image_url"
+              :alt="entry.product.name"
+              class="item-img"
+            />
+          </div>
           <div class="grow">
             <p class="item-name">{{ entry.product.name }}</p>
             <p class="muted text-xs">{{ entry.line.variant }} · {{ entry.line.quantity }} barang</p>
@@ -69,7 +88,10 @@ async function copyReference() {
 
         <div class="divider" />
         <div class="summary-rows">
-          <SummaryRow :label="`Total harga (${cart.selectedCount} barang)`" :value="formatIDR(cart.subtotal)" />
+          <SummaryRow
+            :label="`Total harga (${cart.selectedCount} barang)`"
+            :value="formatIDR(cart.subtotal)"
+          />
           <SummaryRow label="Voucher HEMAT20" value="−Rp20.000" tone="green" />
           <SummaryRow label="Ongkos kirim" value="Gratis" tone="green" />
           <div class="divider" />
@@ -81,7 +103,7 @@ async function copyReference() {
         <Icon name="package" :size="22" />
         <div>
           <p class="next-title">Selanjutnya, pesanan disiapkan</p>
-          <p class="muted text-xs">Dikirim ke Jakarta Selatan · Tiba 11–13 Nov</p>
+          <p class="muted text-xs">Dikirim ke Jakarta Selatan · Tiba 2–3 hari kerja</p>
         </div>
       </section>
 
@@ -169,6 +191,16 @@ async function copyReference() {
   width: 58px;
   height: 66px;
   border-radius: 8px;
+  overflow: hidden;
+  background: #f1f2f5;
+  position: relative;
+}
+
+.item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .item-name {
